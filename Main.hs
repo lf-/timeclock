@@ -6,6 +6,7 @@ import Data.Time.LocalTime
 import Data.Fixed
 import System.IO
 import System.Posix.Signals
+import System.Directory (getHomeDirectory)
 
 
 printableTime :: FormatTime t => t -> String
@@ -30,19 +31,18 @@ data OutputRecord = OutputRecord {
 } deriving (Show)
 
 
--- I really want to make this generic but I failed.
-truncateNum :: Real n => n -> n -> n
-truncateNum prec num =
-    fromIntegral (num `div'` prec) * prec
+roundNum :: (Real n, Fractional n) => n -> n -> n
+roundNum prec num =
+  fromIntegral ((num + 0.5 * prec) `div'` prec) * prec
 
 
 formatOutputRecord :: OutputRecord -> String
 formatOutputRecord record =
-    let start = formatTime defaultTimeLocale "%02H:%02M" $ timeStart record
-        startDate = formatTime defaultTimeLocale "%d-%b" $ timeStart record
-        end   = formatTime defaultTimeLocale "%02H:%02M" $ timeEnd record
-        workedHours = showFixed True $ truncateNum 0.01 $ hours record
-    in startDate ++ "\t" ++ start ++ "-" ++ end ++ "\t" ++ workedHours
+    let start       = formatTime defaultTimeLocale "%02H:%02M" $ timeStart record
+        startDate   = formatTime defaultTimeLocale "%d-%b" $ timeStart record
+        end         = formatTime defaultTimeLocale "%02H:%02M" $ timeEnd record
+        workedHours = showFixed True $ roundNum 0.1 $ hours record
+    in startDate ++ "\t" ++ start ++ "-" ++ end ++ "\t" ++ workedHours ++ "\n"
 
 
 getHoursDone :: ZonedTime -> IO OutputRecord
@@ -67,7 +67,9 @@ main = do
     blockSignals $ addSignal keyboardSignal emptySignalSet
     putStrLn $ "Started " ++ formatTime defaultTimeLocale "%c" t_start
     record <- getHoursDone t_start
+    let recOutput = formatOutputRecord record
     putStrLn ""
-    putStrLn $ formatOutputRecord record
-
+    putStr recOutput
+    home <- getHomeDirectory
+    appendFile (home ++ "/timeclock.tsv") recOutput
 

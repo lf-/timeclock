@@ -22,6 +22,8 @@ executable timeclock
   -- other-extensions:
   build-depends:       base >=4.12,
                        unix >= 2.7,
-                       time >= 1.9
+                       time >= 1.8,
+                       directory >= 1.3
   -- hs-source-dirs:
   default-language:    Haskell2010
+
