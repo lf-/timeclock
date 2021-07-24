@@ -10,8 +10,7 @@ import System.Directory (getHomeDirectory)
 
 
 printableTime :: FormatTime t => t -> String
-printableTime timeDiff =
-    formatTime defaultTimeLocale "%02H:%02M:%02S" timeDiff
+printableTime = formatTime defaultTimeLocale "%02H:%02M:%02S"
 
 
 getElapsed :: ZonedTime -> ZonedTime -> NominalDiffTime
@@ -54,11 +53,27 @@ getHoursDone since = do
 
     if not $ inSignalSet keyboardSignal pending then do
         putStr $ "\rElapsed: " ++ printableTime elapsed
+        putStr . windowTitle $ "timeclock : " <> printableTime elapsed
         hFlush stdout
         threadDelay $ 10^6
         getHoursDone since
     else
         return OutputRecord { timeStart = since, timeEnd = now, hours = toHours elapsed }
+
+-- https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+
+csi :: String
+csi = "\x1b["
+
+osc :: String
+osc = "\x1b]"
+
+resetTitle :: String
+resetTitle = csi <> "23t"
+
+windowTitle :: String -> String
+windowTitle t =
+    osc <> "0;" <> t <> "\a"
 
 
 main :: IO ()
@@ -67,6 +82,8 @@ main = do
     blockSignals $ addSignal keyboardSignal emptySignalSet
     putStrLn $ "Started " ++ formatTime defaultTimeLocale "%c" t_start
     record <- getHoursDone t_start
+
+    putStr resetTitle
     let recOutput = formatOutputRecord record
     putStrLn ""
     putStr recOutput
