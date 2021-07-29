@@ -68,8 +68,11 @@ csi = "\x1b["
 osc :: String
 osc = "\x1b]"
 
-resetTitle :: String
-resetTitle = csi <> "23t"
+saveTitle :: String
+saveTitle = csi <> "22t"
+
+restoreTitle :: String
+restoreTitle = csi <> "23t"
 
 windowTitle :: String -> String
 windowTitle t =
@@ -80,10 +83,12 @@ main :: IO ()
 main = do
     t_start <- getZonedTime
     blockSignals $ addSignal keyboardSignal emptySignalSet
+    putStr saveTitle
+
     putStrLn $ "Started " ++ formatTime defaultTimeLocale "%c" t_start
     record <- getHoursDone t_start
 
-    putStr resetTitle
+    putStr restoreTitle
     let recOutput = formatOutputRecord record
     putStrLn ""
     putStr recOutput
